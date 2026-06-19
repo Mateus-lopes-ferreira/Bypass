@@ -1,16 +1,16 @@
-// script.js - Lógica, edição e persistência de dados no LocalStorage
+// script.js - Lógica com Upload de Imagens e persistência no LocalStorage
+
+// Produtos iniciais usam um ícone padrão caso não tenham imagem em arquivo
 const defaultProducts = [
-    { id: 1, title: "Difusor De Escape 2 Pol C/ponteira Em Inox C/controle", category: "Difusores", price: 480.00, link: "https://www.mercadolivre.com.br" },
-    { id: 2, title: "Difusor De Escape Up Tsi / Polo Tsi C/controle", category: "Difusores", price: 425.00, link: "https://www.mercadolivre.com.br" },
-    { id: 3, title: "Difusor De Escape 2.5 Pol S/ponteira Aço Inox Via Botão", category: "Difusores", price: 380.00, link: "https://www.mercadolivre.com.br" },
-    { id: 4, title: "Difusor De Escape Up Tsi P/ Downpipe C/controle", category: "Downpipes", price: 487.00, link: "https://www.mercadolivre.com.br" },
-    { id: 5, title: "Luva De Escape Emenda Inox 3 Pol X 2.12 Pol", category: "Luvas e Emendas", price: 180.00, link: "https://www.mercadolivre.com.br" },
-    { id: 6, title: "Controle Remoto P/ Difusor De Escape Bypass", category: "Controles e Componentes", price: 80.00, link: "https://www.mercadolivre.com.br" },
-    { id: 7, title: "Kit Via Botão Universal P/ Difusor De Escape", category: "Controles e Componentes", price: 100.00, link: "https://www.mercadolivre.com.br" },
-    { id: 8, title: "Adaptador Pressurização Tsi 1.0", category: "Acessórios", price: 140.00, link: "https://www.mercadolivre.com.br" }
+    { id: 1, title: "Difusor De Escape 2 Pol C/ponteira Em Inox C/controle", category: "Difusores", price: 480.00, link: "https://www.mercadolivre.com.br", image: "" },
+    { id: 2, title: "Difusor De Escape Up Tsi / Polo Tsi C/controle", category: "Difusores", price: 425.00, link: "https://www.mercadolivre.com.br", image: "" },
+    { id: 3, title: "Difusor De Escape 2.5 Pol S/ponteira Aço Inox Via Botão", category: "Difusores", price: 380.00, link: "https://www.mercadolivre.com.br", image: "" },
+    { id: 4, title: "Difusor De Escape Up Tsi P/ Downpipe C/controle", category: "Downpipes", price: 487.00, link: "https://www.mercadolivre.com.br", image: "" },
+    { id: 6, title: "Controle Remoto P/ Difusor De Escape Bypass", category: "Controles e Componentes", price: 80.00, link: "https://www.mercadolivre.com.br", image: "" },
+    { id: 7, title: "Kit Via Botão Universal P/ Difusor De Escape", category: "Controles e Componentes", price: 100.00, link: "https://www.mercadolivre.com.br", image: "" },
+    { id: 8, title: "Adaptador Pressurização Tsi 1.0", category: "Acessórios", price: 140.00, link: "https://www.mercadolivre.com.br", image: "" }
 ];
 
-// Inicia o LocalStorage se ele estiver vazio
 if (!localStorage.getItem('bypass_db_products')) {
     localStorage.setItem('bypass_db_products', JSON.stringify(defaultProducts));
 }
@@ -26,7 +26,6 @@ function saveProducts(products) {
     render();
 }
 
-// Navegação entre as telas (Loja / Admin)
 function switchPage(page) {
     if (page === 'loja') {
         document.getElementById('page-loja').classList.remove('hidden');
@@ -42,7 +41,6 @@ function switchPage(page) {
     render();
 }
 
-// Filtro por categorias da barra lateral
 function filterCategory(cat) {
     currentCategory = cat;
     document.getElementById('categoryTitle').innerText = cat === 'Todos' ? 'Todos os Produtos' : cat;
@@ -59,48 +57,57 @@ function filterCategory(cat) {
     renderLoja();
 }
 
-// Cadastro de novo item vindo do formulário Admin
+// Cadastro de novo item processando o arquivo de imagem recebido
 function handleProductSubmit(e) {
     e.preventDefault();
     const title = document.getElementById('prodTitle').value;
     const category = document.getElementById('prodCategory').value;
     const price = parseFloat(document.getElementById('prodPrice').value);
     const link = document.getElementById('prodLink').value;
+    const imageInput = document.getElementById('prodImage');
 
-    const products = getProducts();
-    const newProduct = {
-        id: Date.now(),
-        title: title,
-        category: category,
-        price: price,
-        link: link
-    };
+    if (imageInput.files && imageInput.files[0]) {
+        const reader = new FileReader();
+        
+        // Converte o arquivo de imagem em uma string de texto Base64
+        reader.onload = function(event) {
+            const base64Image = event.target.result;
 
-    products.push(newProduct);
-    saveProducts(products);
+            const products = getProducts();
+            const newProduct = {
+                id: Date.now(),
+                title: title,
+                category: category,
+                price: price,
+                link: link,
+                image: base64Image // Guarda a imagem convertida aqui
+            };
 
-    document.getElementById('productForm').reset();
-    alert('Produto salvo com sucesso no banco de dados local com seu link!');
+            products.push(newProduct);
+            saveProducts(products);
+
+            document.getElementById('productForm').reset();
+            alert('Produto e imagem cadastrados com sucesso!');
+        };
+        
+        reader.readAsDataURL(imageInput.files[0]);
+    }
 }
 
-// NOVA FUNÇÃO: Editar apenas o link de um produto existente
 function editProductLink(id) {
     const products = getProducts();
     const product = products.find(p => p.id === id);
     
     if (product) {
         const novoLink = prompt(`Cole o novo link do Mercado Livre para:\n"${product.title}"`, product.link);
-        
-        // Se o usuário não cancelar e digitar algo, salva o link
         if (novoLink !== null && novoLink.trim() !== "") {
             product.link = novoLink.trim();
             saveProducts(products);
-            alert('Link atualizado com sucesso!');
+            alert('Link atualizado!');
         }
     }
 }
 
-// Excluir produto do banco
 function deleteProduct(id) {
     if(confirm('Tem certeza que deseja remover este produto?')) {
         let products = getProducts();
@@ -109,7 +116,7 @@ function deleteProduct(id) {
     }
 }
 
-// Renderizar a vitrine da loja
+// Renderizar a vitrine da loja com suporte a imagens reais
 function renderLoja() {
     const grid = document.getElementById('productsGrid');
     grid.innerHTML = '';
@@ -125,10 +132,16 @@ function renderLoja() {
     filtered.forEach(p => {
         const item = document.createElement('div');
         item.className = 'product-item';
+        
+        // Define se exibe a imagem real enviada ou a engrenagem padrão antiga
+        const imgDisplay = p.image 
+            ? `<img src="${p.image}" alt="${p.title}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">`
+            : `<span style="font-size: 40px;">⚙️</span>`;
+
         item.innerHTML = `
-            <div class="product-img-container">
-                ⚙️
-                <span class="product-img-info">${p.category}</span>
+            <div class="product-img-container" style="display: flex; align-items: center; justify-content: center; background: #f7fafc;">
+                ${imgDisplay}
+                <span class="product-img-info" style="z-index: 2;">${p.category}</span>
             </div>
             <div class="product-info">
                 <div class="product-title">${p.title}</div>
@@ -140,7 +153,7 @@ function renderLoja() {
     });
 }
 
-// Renderizar a tabela no painel admin
+// Renderizar a tabela no painel admin exibindo miniaturas
 function renderAdmin() {
     const tbody = document.getElementById('adminTableBody');
     tbody.innerHTML = '';
@@ -148,11 +161,17 @@ function renderAdmin() {
 
     products.forEach(p => {
         const tr = document.createElement('tr');
+        
+        const miniImg = p.image 
+            ? `<img src="${p.image}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">`
+            : `⚙️`;
+
         tr.innerHTML = `
+            <td style="text-align: center; vertical-align: middle;">${miniImg}</td>
             <td><strong>${p.title}</strong></td>
             <td>${p.category}</td>
             <td>R$ ${p.price.toFixed(2).replace('.', ',')}</td>
-            <td><a href="${p.link}" target="_blank" style="color: #3fa9e5; font-size: 13px; font-weight: 600;">Ver link atual</a></td>
+            <td><a href="${p.link}" target="_blank" style="color: #3fa9e5; font-size: 13px; font-weight: 600;">Ver link</a></td>
             <td>
                 <button class="btn" style="padding: 5px 10px; font-size: 12px; width: auto; display: inline-block; background-color: #3fa9e5; color: white; margin-right: 5px;" onclick="editProductLink(${p.id})">Editar Link</button>
                 <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; width: auto; display: inline-block;" onclick="deleteProduct(${p.id})">Excluir</button>
@@ -167,7 +186,6 @@ function render() {
     renderAdmin();
 }
 
-// Inicialização ao carregar a página
 window.onload = function() {
     render();
 };
